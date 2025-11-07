@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finance</title> 
+<link rel="shortcut icon" href="img/logo.png" type="image/x-icon">
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
+<h1 class="text-3xl font-bold text-blue-700 mb-8">Finance Calculator</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-6xl">
+
+  <!-- MORTGAGE CALCULATOR -->
+  <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center">
+    <h2 class="text-2xl font-semibold text-blue-700 mb-4">🏠 Mortgage Calculator</h2>
+
+    <div class="space-y-4 w-full">
+      <div>
+        <label class="block text-gray-700">Home Price ($)</label>
+        <input id="homePrice" type="number" placeholder="e.g. 300000" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Down Payment ($)</label>
+        <input id="downPayment" type="number" placeholder="e.g. 50000" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Interest Rate (%)</label>
+        <input id="interestRate" type="number" step="0.01" placeholder="e.g. 5.5" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Loan Term (Years)</label>
+        <input id="loanTerm" type="number" placeholder="e.g. 30" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <button onclick="calculateMortgage()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Calculate</button>
+    </div>
+
+    <!-- Circle Chart -->
+    <div class="mt-6 flex flex-col items-center">
+      <svg class="w-40 h-40 transform -rotate-90" viewBox="0 0 36 36">
+        <!-- Background circle -->
+        <circle cx="18" cy="18" r="16" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+        <!-- Principal circle -->
+        <circle id="principalCircle" cx="18" cy="18" r="16" stroke="#10b981" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="0 100"/>
+        <!-- Interest circle -->
+        <circle id="interestCircle" cx="18" cy="18" r="16" stroke="#f87171" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="0 100"/>
+      </svg>
+      <div id="chartLabel" class="mt-2 text-lg font-semibold text-blue-700"></div>
+    </div>
+
+    <div id="mortgageResult" class="mt-6 space-y-2 text-lg text-center font-semibold text-blue-700 w-full"></div>
+  </div>
+
+  <!-- STOCK PROFIT CALCULATOR -->
+  <div class="bg-white rounded-2xl shadow-lg p-6">
+    <h2 class="text-2xl text-center font-semibold text-blue-700 mb-4">📈 Stock Profit Calculator</h2>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-gray-700">Number of Shares</label>
+        <input id="shares" type="number" placeholder="e.g. 100" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Buy Price per Share ($)</label>
+        <input id="buyPrice" type="number" step="0.01" placeholder="e.g. 150" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <div>
+        <label class="block text-gray-700">Sell Price per Share ($)</label>
+        <input id="sellPrice" type="number" step="0.01" placeholder="e.g. 180" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+
+      <button onclick="calculateStockProfit()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Calculate</button>
+
+      <div id="stockResult" class="mt-6 space-y-2 text-lg text-center font-semibold text-blue-700"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="mt-10 text-blue-500 text-sm text-center">
+  &copy; <span id="year"></span> Finance Calculator. Developed by Noel Muang
+</footer>
+
+<script>
+  function formatNumber(num, currencySymbol = '$') {
+    return currencySymbol + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function calculateMortgage() {
+    const homePrice = parseFloat(document.getElementById("homePrice").value);
+    const downPayment = parseFloat(document.getElementById("downPayment").value) || 0;
+    const annualRate = parseFloat(document.getElementById("interestRate").value);
+    const years = parseFloat(document.getElementById("loanTerm").value);
+    const resultDiv = document.getElementById("mortgageResult");
+
+    if (!homePrice || !annualRate || !years) {
+      resultDiv.innerHTML = "<p class='text-red-600'>⚠️ Please fill in all fields.</p>";
+      return;
+    }
+
+    const principal = homePrice - downPayment;
+    const monthlyRate = annualRate / 100 / 12;
+    const n = years * 12;
+    const monthlyPayment = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -n));
+    const totalPaid = monthlyPayment * n;
+    const interestPaid = totalPaid - principal;
+
+    // Circle chart
+    const circumference = 2 * Math.PI * 16; // r=16
+    const principalPercent = principal / totalPaid;
+    const interestPercent = interestPaid / totalPaid;
+
+    const principalCircle = document.getElementById("principalCircle");
+    const interestCircle = document.getElementById("interestCircle");
+
+    principalCircle.setAttribute("stroke-dasharray", `${principalPercent * circumference} ${circumference}`);
+    interestCircle.setAttribute("stroke-dasharray", `${interestPercent * circumference} ${circumference}`);
+    interestCircle.setAttribute("stroke-dashoffset", `${-principalPercent * circumference}`);
+
+    document.getElementById("chartLabel").textContent = "Principal (green) vs Interest (red)";
+
+    const today = new Date();
+    const payoffDate = new Date(today.setMonth(today.getMonth() + n));
+    const payoffString = payoffDate.toLocaleDateString(undefined, { year: "numeric", month: "long" });
+
+    resultDiv.innerHTML = `
+      <p>💰 <strong>Monthly Payment:</strong> ${formatNumber(monthlyPayment)}</p>
+      <p>🏦 <strong>Principal:</strong> ${formatNumber(principal)}</p>
+      <p>💸 <strong>Total Interest:</strong> ${formatNumber(interestPaid)}</p>
+      <p>📅 <strong>Payoff Date:</strong> ${payoffString}</p>
+    `;
+  }
+
+  function calculateStockProfit() {
+    const shares = parseFloat(document.getElementById("shares").value);
+    const buyPrice = parseFloat(document.getElementById("buyPrice").value);
+    const sellPrice = parseFloat(document.getElementById("sellPrice").value);
+    const resultDiv = document.getElementById("stockResult");
+
+    if (!shares || !buyPrice || !sellPrice) {
+      resultDiv.innerHTML = "<p class='text-red-600'>⚠️ Please fill in all fields.</p>";
+      return;
+    }
+
+    const totalBuy = shares * buyPrice;
+    const totalSell = shares * sellPrice;
+    const profit = totalSell - totalBuy;
+    const profitPercent = ((profit / totalBuy) * 100).toFixed(2);
+
+    const USD = profit;
+    const GBP = profit * 0.80;
+    const EUR = profit * 0.92;
+    const SGD = profit * 1.35;
+
+    if (profit > 0) {
+      resultDiv.innerHTML = `
+        <p>📈 <strong>Profit:</strong></p>
+        <p>🇺🇸 ${formatNumber(USD, '$')} | 🇬🇧 ${formatNumber(GBP, '£')} | 🇪🇺 ${formatNumber(EUR, '€')} | 🇸🇬 ${formatNumber(SGD, 'S$')}</p>
+        <p>✅ <strong>Return:</strong> ${profitPercent}%</p>
+      `;
+    } else if (profit < 0) {
+      resultDiv.innerHTML = `
+        <p>📉 <strong>Loss:</strong></p>
+        <p>🇺🇸 ${formatNumber(Math.abs(USD), '$')} | 🇬🇧 ${formatNumber(Math.abs(GBP), '£')} | 🇪🇺 ${formatNumber(Math.abs(EUR), '€')} | 🇸🇬 ${formatNumber(Math.abs(SGD), 'S$')}</p>
+        <p>❌ <strong>Return:</strong> ${Math.abs(profitPercent)}%</p>
+      `;
+    } else {
+      resultDiv.innerHTML = `<p>⚖️ No profit, no loss.</p>`;
+    }
+  }
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
